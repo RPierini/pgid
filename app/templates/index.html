@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PGId Demo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        darkMode: "class",
+      };
+    </script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script defer src="/static/app.js"></script>
+  </head>
+  <body class="min-h-screen bg-slate-950 text-slate-100" x-data="gidDemo()" x-init="init()">
+    <div class="mx-auto flex min-h-screen max-w-7xl flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8">
+      <header class="rounded-2xl border border-slate-800 bg-slate-900/80 p-4 shadow-xl shadow-slate-950/40">
+        <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <p class="text-sm uppercase tracking-[0.2em] text-cyan-300">PGId Demo</p>
+            <h1 class="text-2xl font-semibold">Gestão de Identidades, OAuth2/OIDC, JWT, RBAC/ABAC e PEP/PDP/PIP/PAP</h1>
+          </div>
+          <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <label class="flex flex-col text-sm text-slate-300">
+              Usuário demonstrativo
+              <select
+                x-model="selectedUser"
+                class="mt-1 rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100 outline-none ring-0"
+              >
+                <template x-for="user in users" :key="user.username">
+                  <option :value="user.username" x-text="user.label"></option>
+                </template>
+              </select>
+            </label>
+            <button
+              class="rounded-xl bg-cyan-500 px-4 py-2 font-medium text-slate-950 transition hover:bg-cyan-400"
+              @click="login()"
+              :disabled="pending"
+            >
+              Login OAuth2/OIDC
+            </button>
+            <button
+              class="rounded-xl border border-slate-700 px-4 py-2 font-medium text-slate-100 transition hover:border-slate-500"
+              @click="logout()"
+            >
+              Logout
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <main class="grid flex-1 gap-6 xl:grid-cols-[280px_minmax(0,1fr)_360px]">
+        <aside class="rounded-2xl border border-slate-800 bg-slate-900/80 p-4">
+          <h2 class="text-lg font-semibold">Simular requisições</h2>
+          <p class="mt-1 text-sm text-slate-400">Use o token atual ou o token forjado no laboratório.</p>
+          <div class="mt-4 flex flex-col gap-3">
+            <button class="rounded-xl bg-emerald-500/20 px-4 py-3 text-left hover:bg-emerald-500/30" @click="triggerAction('notas')">
+              Ver Notas
+            </button>
+            <button class="rounded-xl bg-indigo-500/20 px-4 py-3 text-left hover:bg-indigo-500/30" @click="triggerAction('lancar')">
+              Lançar Notas
+            </button>
+            <button class="rounded-xl bg-amber-500/20 px-4 py-3 text-left hover:bg-amber-500/30" @click="triggerAction('trancar')">
+              Trancar Curso
+            </button>
+            <button class="rounded-xl bg-fuchsia-500/20 px-4 py-3 text-left hover:bg-fuchsia-500/30" @click="triggerAction('storage')">
+              Baixar Arquivo
+            </button>
+          </div>
+          <div class="mt-6 rounded-2xl border border-slate-800 bg-slate-950/70 p-4 text-sm text-slate-300">
+            <p class="font-medium text-slate-100">Token ativo</p>
+            <p class="mt-2" x-text="useForgedToken ? 'Token forjado (assinatura inválida)' : 'Token original emitido pelo IdP'"></p>
+          </div>
+        </aside>
+
+        <section class="space-y-6">
+          <div class="rounded-2xl border border-slate-800 bg-slate-900/80 p-4">
+            <div class="flex items-center justify-between gap-3">
+              <div>
+                <h2 class="text-lg font-semibold">Visualizador de Topologia</h2>
+                <p class="text-sm text-slate-400">Os nós ficam destacados conforme o fluxo da requisição.</p>
+              </div>
+              <div class="rounded-full border border-slate-700 px-3 py-1 text-xs text-slate-300" x-show="pending">
+                Processando...
+              </div>
+            </div>
+
+            <div class="mt-6 grid gap-4 lg:grid-cols-3">
+              <div class="rounded-2xl border p-4 transition" :class="nodeClasses('Cliente / App')">
+                <p class="text-sm uppercase tracking-wide">Cliente / App</p>
+                <p class="mt-3 text-xs text-slate-300/90" x-text="activeNodes['Cliente / App'].detail || 'SPA em Alpine.js'"></p>
+                <span class="mt-3 inline-flex rounded-full bg-slate-950/60 px-2 py-1 text-xs" x-text="statusBadge('Cliente / App')"></span>
+              </div>
+              <div class="rounded-2xl border p-4 transition" :class="nodeClasses('API Gateway (PEP)')">
+                <p class="text-sm uppercase tracking-wide">API Gateway (PEP)</p>
+                <p class="mt-3 text-xs text-slate-300/90" x-text="activeNodes['API Gateway (PEP)'].detail || 'Validação e enforcement'"></p>
+                <span class="mt-3 inline-flex rounded-full bg-slate-950/60 px-2 py-1 text-xs" x-text="statusBadge('API Gateway (PEP)')"></span>
+              </div>
+              <div class="rounded-2xl border p-4 transition" :class="nodeClasses('Backend API')">
+                <p class="text-sm uppercase tracking-wide">Backend API</p>
+                <p class="mt-3 text-xs text-slate-300/90" x-text="activeNodes['Backend API'].detail || 'Resource server com RBAC/ABAC'"></p>
+                <span class="mt-3 inline-flex rounded-full bg-slate-950/60 px-2 py-1 text-xs" x-text="statusBadge('Backend API')"></span>
+              </div>
+              <div class="rounded-2xl border p-4 transition" :class="nodeClasses('IdP / PDP')">
+                <p class="text-sm uppercase tracking-wide">IdP / PDP</p>
+                <p class="mt-3 text-xs text-slate-300/90" x-text="activeNodes['IdP / PDP'].detail || 'Emissão e verificação de JWT'"></p>
+                <span class="mt-3 inline-flex rounded-full bg-slate-950/60 px-2 py-1 text-xs" x-text="statusBadge('IdP / PDP')"></span>
+              </div>
+              <div class="rounded-2xl border p-4 transition" :class="nodeClasses('Policy Admin / PAP')">
+                <p class="text-sm uppercase tracking-wide">Policy Admin / PAP</p>
+                <p class="mt-3 text-xs text-slate-300/90" x-text="activeNodes['Policy Admin / PAP'].detail || 'Políticas centralizadas'"></p>
+                <span class="mt-3 inline-flex rounded-full bg-slate-950/60 px-2 py-1 text-xs" x-text="statusBadge('Policy Admin / PAP')"></span>
+              </div>
+              <div class="rounded-2xl border p-4 transition" :class="nodeClasses('Identity DB / PIP')">
+                <p class="text-sm uppercase tracking-wide">Identity DB / PIP</p>
+                <p class="mt-3 text-xs text-slate-300/90" x-text="activeNodes['Identity DB / PIP'].detail || 'Atributos do sujeito'"></p>
+                <span class="mt-3 inline-flex rounded-full bg-slate-950/60 px-2 py-1 text-xs" x-text="statusBadge('Identity DB / PIP')"></span>
+              </div>
+              <div class="rounded-2xl border p-4 transition" :class="nodeClasses('Business DB')">
+                <p class="text-sm uppercase tracking-wide">Business DB</p>
+                <p class="mt-3 text-xs text-slate-300/90" x-text="activeNodes['Business DB'].detail || 'Persistência simulada'"></p>
+                <span class="mt-3 inline-flex rounded-full bg-slate-950/60 px-2 py-1 text-xs" x-text="statusBadge('Business DB')"></span>
+              </div>
+              <div class="rounded-2xl border p-4 transition" :class="nodeClasses('Object Storage')">
+                <p class="text-sm uppercase tracking-wide">Object Storage</p>
+                <p class="mt-3 text-xs text-slate-300/90" x-text="activeNodes['Object Storage'].detail || 'S3 mock com pre-signed URL'"></p>
+                <span class="mt-3 inline-flex rounded-full bg-slate-950/60 px-2 py-1 text-xs" x-text="statusBadge('Object Storage')"></span>
+              </div>
+            </div>
+          </div>
+
+          <div class="rounded-2xl border border-slate-800 bg-slate-900/80 p-4">
+            <h2 class="text-lg font-semibold">Última Resposta</h2>
+            <pre class="mt-4 overflow-x-auto rounded-2xl bg-slate-950/80 p-4 text-xs text-cyan-100" x-text="pretty(lastResponse)"></pre>
+            <div x-show="lastDownload" class="mt-4 rounded-2xl border border-slate-800 bg-slate-950/80 p-4 text-sm text-slate-200">
+              <p class="font-medium text-slate-100">Download do storage</p>
+              <p class="mt-2" x-text="lastDownload?.data?.file_name"></p>
+              <p class="mt-2 text-slate-400" x-text="lastDownload?.data?.content"></p>
+            </div>
+          </div>
+        </section>
+
+        <aside class="space-y-6">
+          <section class="rounded-2xl border border-slate-800 bg-slate-900/80 p-4">
+            <h2 class="text-lg font-semibold">JWT Inspector</h2>
+            <div class="mt-4 space-y-3 text-sm">
+              <div>
+                <p class="mb-1 font-medium text-slate-200">Header</p>
+                <textarea class="h-24 w-full rounded-2xl border border-slate-800 bg-slate-950/80 p-3 font-mono text-xs" readonly x-model="jwtHeader"></textarea>
+              </div>
+              <div>
+                <p class="mb-1 font-medium text-slate-200">Payload</p>
+                <textarea class="h-40 w-full rounded-2xl border border-slate-800 bg-slate-950/80 p-3 font-mono text-xs" readonly x-model="jwtPayload"></textarea>
+              </div>
+              <div>
+                <p class="mb-1 font-medium text-slate-200">Signature</p>
+                <textarea class="h-24 w-full rounded-2xl border border-slate-800 bg-slate-950/80 p-3 font-mono text-xs" readonly x-model="jwtSignature"></textarea>
+              </div>
+            </div>
+          </section>
+
+          <section class="rounded-2xl border border-slate-800 bg-slate-900/80 p-4">
+            <h2 class="text-lg font-semibold">Laboratório de Ataques</h2>
+            <p class="mt-1 text-sm text-slate-400">Edite o payload para tentar elevar privilégios e use o token forjado nas chamadas.</p>
+            <textarea
+              class="mt-4 h-48 w-full rounded-2xl border border-slate-800 bg-slate-950/80 p-3 font-mono text-xs"
+              x-model="attackPayload"
+            ></textarea>
+            <div class="mt-4 flex items-center gap-3">
+              <button class="rounded-xl bg-rose-500 px-4 py-2 font-medium text-white hover:bg-rose-400" @click="forgeToken()">
+                Forjar Token
+              </button>
+              <label class="flex items-center gap-2 text-sm text-slate-300">
+                <input type="checkbox" x-model="useForgedToken" class="rounded border-slate-700 bg-slate-950" />
+                Usar token forjado
+              </label>
+            </div>
+          </section>
+        </aside>
+      </main>
+
+      <footer class="rounded-2xl border border-slate-800 bg-slate-900/80 p-4">
+        <div class="flex items-center justify-between">
+          <h2 class="text-lg font-semibold">Console</h2>
+          <span class="text-sm text-slate-400" x-text="`${logs.length} evento(s)`"></span>
+        </div>
+        <div class="mt-4 max-h-72 space-y-3 overflow-y-auto">
+          <template x-for="entry in logs" :key="entry.id">
+            <div class="rounded-2xl border border-slate-800 bg-slate-950/80 p-3 text-sm">
+              <div class="flex flex-wrap items-center gap-2">
+                <span class="rounded-full bg-slate-800 px-2 py-1 text-xs" x-text="entry.timestamp"></span>
+                <span class="rounded-full bg-cyan-500/20 px-2 py-1 text-xs" x-text="entry.method"></span>
+                <span class="rounded-full bg-slate-800 px-2 py-1 text-xs" x-text="entry.endpoint"></span>
+                <span class="rounded-full px-2 py-1 text-xs" :class="entry.status >= 400 ? 'bg-rose-500/20 text-rose-100' : 'bg-emerald-500/20 text-emerald-100'" x-text="`HTTP ${entry.status}`"></span>
+                <span class="rounded-full bg-slate-800 px-2 py-1 text-xs" x-text="`${entry.duration} ms`"></span>
+              </div>
+              <p class="mt-2 text-slate-300" x-text="entry.message"></p>
+            </div>
+          </template>
+        </div>
+      </footer>
+    </div>
+  </body>
+</html>

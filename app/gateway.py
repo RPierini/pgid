@@ -104,7 +104,9 @@ def _serialize_policy(policy: dict[str, Any] | None) -> dict[str, Any] | None:
     }
 
 
-def _authorize(authorization: str | None, policy_name: str) -> tuple[DemoUser, dict[str, Any], dict[str, Any], list[FlowStep]] | JSONResponse:
+async def _authorize(
+    authorization: str | None, policy_name: str
+) -> tuple[DemoUser, dict[str, Any], dict[str, Any], list[FlowStep]] | JSONResponse:
     policy = POLICIES[policy_name]
     flow = _flow_start()
     token = _extract_bearer_token(authorization)
@@ -121,12 +123,12 @@ def _authorize(authorization: str | None, policy_name: str) -> tuple[DemoUser, d
     flow[2].status = 200
     flow[2].detail = "Assinatura RSA e claims padrão validadas pelo PDP."
 
-    user = get_demo_user_by_subject(claims["sub"])
+    user = await get_demo_user_by_subject(claims["sub"])
     if user is None:
         return _deny("Sujeito do token não encontrado no PIP.", flow, status.HTTP_401_UNAUTHORIZED, policy)
 
     flow[3].status = 200
-    flow[3].detail = "Atributos do sujeito carregados do mock de identidades."
+    flow[3].detail = "Atributos do sujeito carregados do Identity DB (SQLite)."
 
     token_roles = set(claims.get("roles", []))
     required_roles = set(policy["required_roles"])
@@ -161,7 +163,7 @@ def _success(
     flow.extend(
         [
             FlowStep(node="Backend API", status=200, detail=backend_detail),
-            FlowStep(node="Business DB", status=200, detail="Persistência simulada consultada com sucesso."),
+            FlowStep(node="Business DB", status=200, detail="Persistência consultada no PostgreSQL com sucesso."),
             FlowStep(node="Cliente / App", status=200, detail="Resposta consolidada devolvida à SPA."),
         ]
     )
@@ -183,11 +185,11 @@ def _success(
 
 @router.get("/aluno/notas", response_model=ApiEnvelope)
 async def aluno_notas(authorization: str | None = Header(default=None)) -> ApiEnvelope | JSONResponse:
-    decision = _authorize(authorization, "view_grades")
+    decision = await _authorize(authorization, "view_grades")
     if isinstance(decision, JSONResponse):
         return decision
     user, claims, policy, flow = decision
-    data = backend_api.fetch_grades(user)
+    data = await backend_api.fetch_grades(user)
     return _success(
         "Notas recuperadas com sucesso.",
         user,
@@ -203,18 +205,18 @@ async def lancar_notas(
     payload: GradeSubmission,
     authorization: str | None = Header(default=None),
 ) -> ApiEnvelope | JSONResponse:
-    decision = _authorize(authorization, "submit_grades")
+    decision = await _authorize(authorization, "submit_grades")
     if isinstance(decision, JSONResponse):
         return decision
     user, claims, policy, flow = decision
-    data = backend_api.submit_grade(user, payload)
+    data = await backend_api.submit_grade(user, payload)
     return _success(
         "Nota lançada com sucesso.",
         user,
         policy,
         flow,
         data,
-        backend_detail="Backend registrou o lançamento de nota.",
+        backend_detail="Backend registrou o lançamento de nota no PostgreSQL.",
     )
 
 
@@ -223,18 +225,18 @@ async def trancar_curso(
     payload: CourseLockRequest,
     authorization: str | None = Header(default=None),
 ) -> ApiEnvelope | JSONResponse:
-    decision = _authorize(authorization, "freeze_course")
+    decision = await _authorize(authorization, "freeze_course")
     if isinstance(decision, JSONResponse):
         return decision
     user, claims, policy, flow = decision
-    data = backend_api.freeze_course(user, payload)
+    data = await backend_api.freeze_course(user, payload)
     return _success(
         "Curso trancado com sucesso.",
         user,
         policy,
         flow,
         data,
-        backend_detail="Backend executou a operação administrativa de trancamento.",
+        backend_detail="Backend executou a operação administrativa de trancamento no PostgreSQL.",
     )
 
 
@@ -243,7 +245,7 @@ async def presigned_url(
     request: Request,
     authorization: str | None = Header(default=None),
 ) -> ApiEnvelope | JSONResponse:
-    decision = _authorize(authorization, "presigned_url")
+    decision = await _authorize(authorization, "presigned_url")
     if isinstance(decision, JSONResponse):
         return decision
     user, claims, policy, flow = decision

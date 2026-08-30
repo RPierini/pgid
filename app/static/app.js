@@ -263,3 +263,130 @@ document.addEventListener("alpine:init", () => {
     },
   }));
 });
+
+document.addEventListener("alpine:init", () => {
+  Alpine.data("adminPanel", () => ({
+    activeTab: "users",
+    users: [],
+    grades: [],
+    courseLocks: [],
+    newUser: {
+      username: "",
+      subject: "",
+      name: "",
+      label: "",
+      roles: "aluno",
+      scopes: "notas:read storage:download",
+      department: "",
+      academic_unit: "sistemas",
+      clearance: 1,
+      can_grade: false,
+      storage_tier: "basic",
+      active: true,
+    },
+    message: "",
+    error: "",
+
+    async init() {
+      await this.loadAll();
+    },
+
+    async loadAll() {
+      await Promise.all([this.loadUsers(), this.loadGrades(), this.loadCourseLocks()]);
+    },
+
+    async loadUsers() {
+      try {
+        const r = await fetch("/admin/users");
+        this.users = await r.json();
+      } catch (e) {
+        this.error = e.message;
+      }
+    },
+
+    async loadGrades() {
+      try {
+        const r = await fetch("/admin/grades");
+        this.grades = await r.json();
+      } catch (e) {
+        this.error = e.message;
+      }
+    },
+
+    async loadCourseLocks() {
+      try {
+        const r = await fetch("/admin/course-locks");
+        this.courseLocks = await r.json();
+      } catch (e) {
+        this.error = e.message;
+      }
+    },
+
+    async createUser() {
+      const body = {
+        ...this.newUser,
+        roles: this.newUser.roles.split(/\s+/).filter(Boolean),
+        scopes: this.newUser.scopes.split(/\s+/).filter(Boolean),
+        clearance: Number(this.newUser.clearance),
+      };
+      if (!body.subject) body.subject = body.username;
+      if (!body.label) body.label = body.name;
+      const r = await fetch("/admin/users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (r.ok) {
+        this.message = "Usuário criado com sucesso.";
+        this.newUser = { username: "", subject: "", name: "", label: "", roles: "aluno", scopes: "notas:read storage:download", department: "", academic_unit: "sistemas", clearance: 1, can_grade: false, storage_tier: "basic", active: true };
+        await this.loadUsers();
+      } else {
+        const err = await r.json();
+        this.error = err.detail || "Erro ao criar usuário.";
+      }
+    },
+
+    async toggleActive(user) {
+      const r = await fetch(`/admin/users/${user.username}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ active: !user.active }),
+      });
+      if (r.ok) {
+        await this.loadUsers();
+      } else {
+        this.error = "Erro ao atualizar usuário.";
+      }
+    },
+
+    async deleteUser(username) {
+      if (!confirm(`Remover usuário "${username}"?`)) return;
+      const r = await fetch(`/admin/users/${username}`, { method: "DELETE" });
+      if (r.ok || r.status === 204) {
+        await this.loadUsers();
+      } else {
+        this.error = "Erro ao remover usuário.";
+      }
+    },
+
+    async deleteGrade(id) {
+      if (!confirm(`Remover nota #${id}?`)) return;
+      const r = await fetch(`/admin/grades/${id}`, { method: "DELETE" });
+      if (r.ok || r.status === 204) {
+        await this.loadGrades();
+      } else {
+        this.error = "Erro ao remover nota.";
+      }
+    },
+
+    async deleteCourseLock(id) {
+      if (!confirm(`Remover trancamento #${id}?`)) return;
+      const r = await fetch(`/admin/course-locks/${id}`, { method: "DELETE" });
+      if (r.ok || r.status === 204) {
+        await this.loadCourseLocks();
+      } else {
+        this.error = "Erro ao remover trancamento.";
+      }
+    },
+  }));
+});

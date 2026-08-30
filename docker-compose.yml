@@ -1,0 +1,51 @@
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    ports:
+      - "80:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+
+  backend:
+    build: .
+    environment:
+      IDENTITY_DB_URL: "sqlite+aiosqlite:////data/identity.db"
+      POSTGRES_HOST: db
+      POSTGRES_PORT: "5432"
+      POSTGRES_DB: pgid
+      POSTGRES_USER: pgid
+      POSTGRES_PASSWORD: pgid
+    volumes:
+      - identity_data:/data
+    expose:
+      - "8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/auth/jwks.json')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: pgid
+      POSTGRES_USER: pgid
+      POSTGRES_PASSWORD: pgid
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pgid -d pgid"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  identity_data:
+  pg_data:

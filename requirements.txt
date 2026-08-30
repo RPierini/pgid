@@ -1,6 +1,10 @@
 fastapi
-uvicorn
+uvicorn[standard]
 pyjwt
 cryptography
 pydantic
 jinja2
+sqlalchemy[asyncio]
+aiosqlite
+asyncpg
+python-dotenv

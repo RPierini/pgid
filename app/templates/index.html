@@ -201,5 +201,150 @@
         </div>
       </footer>
     </div>
+
+    <!-- Painel de Administração -->
+    <div class="mx-auto max-w-7xl px-4 pb-10 sm:px-6 lg:px-8" x-data="adminPanel()" x-init="init()">
+      <div class="mt-8 rounded-2xl border border-slate-700 bg-slate-900/80 p-6">
+        <h2 class="text-xl font-semibold text-slate-100">Painel de Administração</h2>
+        <p class="mt-1 text-sm text-slate-400">Gerencie identidades (SQLite) e dados da aplicação (PostgreSQL).</p>
+
+        <!-- Mensagens de feedback -->
+        <div x-show="message" class="mt-4 rounded-xl bg-emerald-500/20 p-3 text-sm text-emerald-100" x-text="message" @click="message=''"></div>
+        <div x-show="error" class="mt-4 rounded-xl bg-rose-500/20 p-3 text-sm text-rose-100" x-text="error" @click="error=''"></div>
+
+        <!-- Tabs -->
+        <div class="mt-4 flex gap-2">
+          <button class="rounded-xl px-4 py-2 text-sm font-medium transition"
+            :class="activeTab === 'users' ? 'bg-cyan-500 text-slate-950' : 'border border-slate-700 text-slate-300 hover:border-slate-500'"
+            @click="activeTab = 'users'">Identidades / Usuários</button>
+          <button class="rounded-xl px-4 py-2 text-sm font-medium transition"
+            :class="activeTab === 'grades' ? 'bg-cyan-500 text-slate-950' : 'border border-slate-700 text-slate-300 hover:border-slate-500'"
+            @click="activeTab = 'grades'">Notas (PostgreSQL)</button>
+          <button class="rounded-xl px-4 py-2 text-sm font-medium transition"
+            :class="activeTab === 'locks' ? 'bg-cyan-500 text-slate-950' : 'border border-slate-700 text-slate-300 hover:border-slate-500'"
+            @click="activeTab = 'locks'">Trancamentos (PostgreSQL)</button>
+        </div>
+
+        <!-- Tab: Usuários -->
+        <div x-show="activeTab === 'users'" class="mt-6 space-y-6">
+          <div class="overflow-x-auto rounded-2xl border border-slate-800">
+            <table class="w-full text-sm text-slate-300">
+              <thead class="bg-slate-950/60 text-left text-xs uppercase tracking-wide text-slate-400">
+                <tr>
+                  <th class="px-4 py-3">Usuário</th>
+                  <th class="px-4 py-3">Nome</th>
+                  <th class="px-4 py-3">Roles</th>
+                  <th class="px-4 py-3">Clearance</th>
+                  <th class="px-4 py-3">Ativo</th>
+                  <th class="px-4 py-3">Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                <template x-for="u in users" :key="u.username">
+                  <tr class="border-t border-slate-800 hover:bg-slate-800/40">
+                    <td class="px-4 py-2 font-mono" x-text="u.username"></td>
+                    <td class="px-4 py-2" x-text="u.label"></td>
+                    <td class="px-4 py-2" x-text="u.roles.join(', ')"></td>
+                    <td class="px-4 py-2" x-text="u.clearance"></td>
+                    <td class="px-4 py-2">
+                      <span class="rounded-full px-2 py-1 text-xs" :class="u.active ? 'bg-emerald-500/20 text-emerald-100' : 'bg-rose-500/20 text-rose-100'" x-text="u.active ? 'Sim' : 'Não'"></span>
+                    </td>
+                    <td class="px-4 py-2">
+                      <button class="mr-2 rounded-lg bg-slate-700 px-2 py-1 text-xs hover:bg-slate-600" @click="toggleActive(u)" x-text="u.active ? 'Desativar' : 'Ativar'"></button>
+                      <button class="rounded-lg bg-rose-500/30 px-2 py-1 text-xs text-rose-100 hover:bg-rose-500/50" @click="deleteUser(u.username)">Remover</button>
+                    </td>
+                  </tr>
+                </template>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Novo usuário -->
+          <div class="rounded-2xl border border-slate-800 bg-slate-950/60 p-4">
+            <h3 class="mb-4 font-medium text-slate-200">Criar novo usuário (Identity DB)</h3>
+            <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              <label class="flex flex-col text-xs text-slate-400">Usuário <input class="mt-1 rounded-lg border border-slate-700 bg-slate-900 px-2 py-1 text-slate-100" x-model="newUser.username" /></label>
+              <label class="flex flex-col text-xs text-slate-400">Nome <input class="mt-1 rounded-lg border border-slate-700 bg-slate-900 px-2 py-1 text-slate-100" x-model="newUser.name" /></label>
+              <label class="flex flex-col text-xs text-slate-400">Label <input class="mt-1 rounded-lg border border-slate-700 bg-slate-900 px-2 py-1 text-slate-100" x-model="newUser.label" /></label>
+              <label class="flex flex-col text-xs text-slate-400">Subject <input class="mt-1 rounded-lg border border-slate-700 bg-slate-900 px-2 py-1 text-slate-100" x-model="newUser.subject" placeholder="(=username se vazio)" /></label>
+              <label class="flex flex-col text-xs text-slate-400">Roles (espaço) <input class="mt-1 rounded-lg border border-slate-700 bg-slate-900 px-2 py-1 text-slate-100" x-model="newUser.roles" /></label>
+              <label class="flex flex-col text-xs text-slate-400">Scopes (espaço) <input class="mt-1 rounded-lg border border-slate-700 bg-slate-900 px-2 py-1 text-slate-100" x-model="newUser.scopes" /></label>
+              <label class="flex flex-col text-xs text-slate-400">Departamento <input class="mt-1 rounded-lg border border-slate-700 bg-slate-900 px-2 py-1 text-slate-100" x-model="newUser.department" /></label>
+              <label class="flex flex-col text-xs text-slate-400">Unidade Acadêmica <input class="mt-1 rounded-lg border border-slate-700 bg-slate-900 px-2 py-1 text-slate-100" x-model="newUser.academic_unit" /></label>
+              <label class="flex flex-col text-xs text-slate-400">Clearance <input type="number" class="mt-1 rounded-lg border border-slate-700 bg-slate-900 px-2 py-1 text-slate-100" x-model="newUser.clearance" /></label>
+              <label class="flex flex-col text-xs text-slate-400">Storage Tier <input class="mt-1 rounded-lg border border-slate-700 bg-slate-900 px-2 py-1 text-slate-100" x-model="newUser.storage_tier" /></label>
+              <label class="flex items-center gap-2 text-xs text-slate-400"><input type="checkbox" class="rounded border-slate-700 bg-slate-950" x-model="newUser.can_grade" /> Pode lançar notas</label>
+            </div>
+            <button class="mt-4 rounded-xl bg-cyan-500 px-4 py-2 text-sm font-medium text-slate-950 hover:bg-cyan-400" @click="createUser()">Criar usuário</button>
+          </div>
+        </div>
+
+        <!-- Tab: Notas -->
+        <div x-show="activeTab === 'grades'" class="mt-6">
+          <div class="overflow-x-auto rounded-2xl border border-slate-800">
+            <table class="w-full text-sm text-slate-300">
+              <thead class="bg-slate-950/60 text-left text-xs uppercase tracking-wide text-slate-400">
+                <tr>
+                  <th class="px-4 py-3">#</th>
+                  <th class="px-4 py-3">Usuário</th>
+                  <th class="px-4 py-3">Disciplina</th>
+                  <th class="px-4 py-3">Nota</th>
+                  <th class="px-4 py-3">Status</th>
+                  <th class="px-4 py-3">Data</th>
+                  <th class="px-4 py-3">Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                <template x-for="g in grades" :key="g.id">
+                  <tr class="border-t border-slate-800 hover:bg-slate-800/40">
+                    <td class="px-4 py-2" x-text="g.id"></td>
+                    <td class="px-4 py-2" x-text="g.viewer_username"></td>
+                    <td class="px-4 py-2" x-text="g.disciplina"></td>
+                    <td class="px-4 py-2" x-text="g.nota"></td>
+                    <td class="px-4 py-2" x-text="g.status"></td>
+                    <td class="px-4 py-2 text-xs" x-text="g.created_at ? new Date(g.created_at).toLocaleString('pt-BR') : '—'"></td>
+                    <td class="px-4 py-2">
+                      <button class="rounded-lg bg-rose-500/30 px-2 py-1 text-xs text-rose-100 hover:bg-rose-500/50" @click="deleteGrade(g.id)">Remover</button>
+                    </td>
+                  </tr>
+                </template>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Tab: Trancamentos -->
+        <div x-show="activeTab === 'locks'" class="mt-6">
+          <div class="overflow-x-auto rounded-2xl border border-slate-800">
+            <table class="w-full text-sm text-slate-300">
+              <thead class="bg-slate-950/60 text-left text-xs uppercase tracking-wide text-slate-400">
+                <tr>
+                  <th class="px-4 py-3">#</th>
+                  <th class="px-4 py-3">Aprovado por</th>
+                  <th class="px-4 py-3">Curso</th>
+                  <th class="px-4 py-3">Motivo</th>
+                  <th class="px-4 py-3">Data</th>
+                  <th class="px-4 py-3">Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                <template x-for="l in courseLocks" :key="l.id">
+                  <tr class="border-t border-slate-800 hover:bg-slate-800/40">
+                    <td class="px-4 py-2" x-text="l.id"></td>
+                    <td class="px-4 py-2" x-text="l.approved_by"></td>
+                    <td class="px-4 py-2" x-text="l.course"></td>
+                    <td class="px-4 py-2" x-text="l.reason"></td>
+                    <td class="px-4 py-2 text-xs" x-text="l.created_at ? new Date(l.created_at).toLocaleString('pt-BR') : '—'"></td>
+                    <td class="px-4 py-2">
+                      <button class="rounded-lg bg-rose-500/30 px-2 py-1 text-xs text-rose-100 hover:bg-rose-500/50" @click="deleteCourseLock(l.id)">Remover</button>
+                    </td>
+                  </tr>
+                </template>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
   </body>
 </html>

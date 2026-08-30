@@ -10,6 +10,7 @@ from cryptography.hazmat.primitives.asymmetric import rsa
 from fastapi import APIRouter, HTTPException, status
 
 from app.models import DemoUser, FlowStep, LoginRequest, TokenResponse
+from app.repositories import identity_repo
 
 ISSUER = "pgid-demo"
 ACCESS_TOKEN_LIFETIME_SECONDS = 3600
@@ -28,52 +29,6 @@ PUBLIC_KEY_PEM = _private_key.public_key().public_bytes(
     encoding=serialization.Encoding.PEM,
     format=serialization.PublicFormat.SubjectPublicKeyInfo,
 )
-
-DEMO_USERS: dict[str, DemoUser] = {
-    "alice": DemoUser(
-        username="alice",
-        subject="aluna-alice",
-        name="Alice",
-        label="Alice - Aluna",
-        roles=["aluno"],
-        scopes=["notas:read", "storage:download"],
-        department="alunos",
-        academic_unit="sistemas",
-        clearance=1,
-        storage_tier="basic",
-    ),
-    "bob": DemoUser(
-        username="bob",
-        subject="professor-bob",
-        name="Bob",
-        label="Bob - Professor",
-        roles=["professor"],
-        scopes=["notas:read", "notas:write", "storage:download"],
-        department="docencia",
-        academic_unit="sistemas",
-        clearance=3,
-        can_grade=True,
-        storage_tier="staff",
-    ),
-    "carlos": DemoUser(
-        username="carlos",
-        subject="coordenador-carlos",
-        name="Carlos",
-        label="Carlos - Coordenador",
-        roles=["coordenador"],
-        scopes=[
-            "notas:read",
-            "notas:write",
-            "matriculas:manage",
-            "storage:download",
-        ],
-        department="academico",
-        academic_unit="sistemas",
-        clearance=5,
-        can_grade=True,
-        storage_tier="admin",
-    ),
-}
 
 
 def _b64url_uint(value: int) -> str:
@@ -99,12 +54,12 @@ def _public_profile(user: DemoUser) -> dict[str, Any]:
     }
 
 
-def get_demo_user(username: str) -> DemoUser | None:
-    return DEMO_USERS.get(username)
+async def get_demo_user(username: str) -> DemoUser | None:
+    return await identity_repo.get_user_by_username(username)
 
 
-def get_demo_user_by_subject(subject: str) -> DemoUser | None:
-    return next((user for user in DEMO_USERS.values() if user.subject == subject), None)
+async def get_demo_user_by_subject(subject: str) -> DemoUser | None:
+    return await identity_repo.get_user_by_subject(subject)
 
 
 def issue_access_token(user: DemoUser) -> str:
@@ -138,7 +93,7 @@ def verify_access_token(token: str) -> dict[str, Any]:
 
 @router.post("/auth/login", response_model=TokenResponse)
 async def login(payload: LoginRequest) -> TokenResponse:
-    user = get_demo_user(payload.username)
+    user = await get_demo_user(payload.username)
     if not user or not user.active:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

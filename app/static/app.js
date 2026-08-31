@@ -47,6 +47,8 @@ document.addEventListener("alpine:init", () => {
     flowSteps: [],
     flowStepIndex: -1,
     pending: false,
+    showLoginModal: false,
+    loginPassword: "",
 
     init() {
       this.resetTopology();
@@ -140,7 +142,27 @@ document.addEventListener("alpine:init", () => {
       this.addLog("POST", "/logout", 200, 0, "Sessão local encerrada.");
     },
 
+    isLoggedIn() {
+      return !!this.token;
+    },
+
+    currentUserName() {
+      const u = this.users.find((user) => user.username === this.selectedUser);
+      return u ? u.label : this.selectedUser;
+    },
+
+    openLoginModal() {
+      this.loginPassword = "";
+      this.showLoginModal = true;
+    },
+
+    closeLoginModal() {
+      this.showLoginModal = false;
+      this.loginPassword = "";
+    },
+
     async login() {
+      this.closeLoginModal();
       await this.runRequest({
         method: "POST",
         endpoint: "/auth/login",
@@ -152,6 +174,7 @@ document.addEventListener("alpine:init", () => {
           this.useForgedToken = false;
           this.syncInspector(result.access_token);
           this.lastResponse = result;
+          this.addLog("AUTH", "/auth/login", 200, result?.flow?.length || 0, `Login de ${result.user?.label ?? this.selectedUser} (senha aceita para demonstração).`);
         },
       });
     },

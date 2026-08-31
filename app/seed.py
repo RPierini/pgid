@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 import json
+from datetime import UTC, datetime
 
 from sqlalchemy import select
 
+from app.db.appdb import app_session
 from app.db.identity import identity_session
-from app.db.models import UserModel
+from app.db.models import CourseLockRecord, GradeRecord, UserModel
 
 _SEED_USERS = [
     {
@@ -77,4 +79,48 @@ async def seed_identity_db() -> None:
                         active=data["active"],
                     )
                 )
+        await session.commit()
+
+
+async def seed_app_db() -> None:
+    """Insere notas demo no banco de aplicação (PostgreSQL) se ainda não existirem."""
+    async with app_session() as session:
+        grades_exist = (await session.execute(select(GradeRecord.id).limit(1))).scalars().first()
+        if grades_exist is None:
+            session.add_all(
+                [
+                    GradeRecord(
+                        viewer_username="alice",
+                        disciplina="Arquitetura de Software",
+                        nota=9.4,
+                        status="aprovada",
+                        created_at=datetime.now(UTC),
+                    ),
+                    GradeRecord(
+                        viewer_username="alice",
+                        disciplina="Segurança de Aplicações",
+                        nota=8.9,
+                        status="aprovada",
+                        created_at=datetime.now(UTC),
+                    ),
+                    GradeRecord(
+                        viewer_username="alice",
+                        disciplina="Identidade Digital",
+                        nota=9.8,
+                        status="aprovada",
+                        created_at=datetime.now(UTC),
+                    ),
+                ]
+            )
+        # Um trancamento de exemplo para popular o painel admin.
+        locks_exist = (await session.execute(select(CourseLockRecord.id).limit(1))).scalars().first()
+        if locks_exist is None:
+            session.add(
+                CourseLockRecord(
+                    approved_by="carlos",
+                    course="Engenharia de Software",
+                    reason="Ajuste operacional do semestre (demo).",
+                    created_at=datetime.now(UTC),
+                )
+            )
         await session.commit()

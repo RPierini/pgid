@@ -15,7 +15,7 @@ from app.db.appdb import AppBase, app_engine
 from app.db.identity import IdentityBase, identity_engine
 from app.db.models import CourseLockRecord, GradeRecord, UserModel  # noqa: F401 – trigger metadata
 from app.gateway import router as gateway_router
-from app.seed import seed_identity_db
+from app.seed import seed_app_db, seed_identity_db
 from app.storage_mock import router as storage_router
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -28,6 +28,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     async with app_engine.begin() as conn:
         await conn.run_sync(AppBase.metadata.create_all)
     await seed_identity_db()
+    await seed_app_db()
     yield
 
 

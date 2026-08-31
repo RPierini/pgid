@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>PGId Demo</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      [x-cloak] { display: none !important; }
+    </style>
     <script>
       tailwind.config = {
         darkMode: "class",
@@ -22,27 +25,25 @@
             <h1 class="text-2xl font-semibold">Gestão de Identidades, OAuth2/OIDC, JWT, RBAC/ABAC e PEP/PDP/PIP/PAP</h1>
           </div>
           <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
-            <label class="flex flex-col text-sm text-slate-300">
-              Usuário demonstrativo
-              <select
-                x-model="selectedUser"
-                class="mt-1 rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100 outline-none ring-0"
-              >
-                <template x-for="user in users" :key="user.username">
-                  <option :value="user.username" x-text="user.label"></option>
-                </template>
-              </select>
-            </label>
+            <span
+              x-show="isLoggedIn()"
+              class="inline-flex items-center gap-2 rounded-xl border border-emerald-700 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-200"
+            >
+              <span class="h-2 w-2 rounded-full bg-emerald-400"></span>
+              <span x-text="currentUserName()"></span>
+            </span>
             <button
-              class="rounded-xl bg-cyan-500 px-4 py-2 font-medium text-slate-950 transition hover:bg-cyan-400"
-              @click="login()"
+              class="rounded-xl bg-cyan-500 px-4 py-2 font-medium text-slate-950 transition hover:bg-cyan-400 disabled:opacity-50"
+              @click="openLoginModal()"
               :disabled="pending"
+              x-show="!isLoggedIn()"
             >
               Login OAuth2/OIDC
             </button>
             <button
               class="rounded-xl border border-slate-700 px-4 py-2 font-medium text-slate-100 transition hover:border-slate-500"
               @click="logout()"
+              x-show="isLoggedIn()"
             >
               Logout
             </button>
@@ -90,8 +91,8 @@
               <!-- Camada 1: Frontend -->
               <div>
                 <p class="mb-2 text-xs font-semibold uppercase tracking-widest text-cyan-300/80">● Frontend</p>
-                <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                  <div class="rounded-2xl border p-4 transition" :class="nodeClasses('Cliente / App')">
+                <div class="flex flex-wrap justify-center gap-4">
+                  <div class="w-full max-w-sm rounded-2xl border p-4 transition" :class="nodeClasses('Cliente / App')">
                     <p class="text-sm uppercase tracking-wide">Cliente / App</p>
                     <p class="mt-3 text-xs text-slate-300/90" x-text="activeNodes['Cliente / App'].detail || 'SPA em Alpine.js'"></p>
                     <span class="mt-3 inline-flex rounded-full bg-slate-950/60 px-2 py-1 text-xs" x-text="statusBadge('Cliente / App')"></span>
@@ -102,18 +103,18 @@
               <!-- Camada 2: Infraestrutura -->
               <div>
                 <p class="mb-2 text-xs font-semibold uppercase tracking-widest text-indigo-300/80">● Infraestrutura</p>
-                <div class="grid gap-4 sm:grid-cols-3 lg:grid-cols-4">
-                  <div class="rounded-2xl border p-4 transition" :class="nodeClasses('API Gateway (PEP)')">
+                <div class="flex flex-wrap justify-center gap-4">
+                  <div class="w-full max-w-sm rounded-2xl border p-4 transition" :class="nodeClasses('API Gateway (PEP)')">
                     <p class="text-sm uppercase tracking-wide">API Gateway (PEP)</p>
                     <p class="mt-3 text-xs text-slate-300/90" x-text="activeNodes['API Gateway (PEP)'].detail || 'Validação e enforcement'"></p>
                     <span class="mt-3 inline-flex rounded-full bg-slate-950/60 px-2 py-1 text-xs" x-text="statusBadge('API Gateway (PEP)')"></span>
                   </div>
-                  <div class="rounded-2xl border p-4 transition" :class="nodeClasses('IdP / PDP')">
+                  <div class="w-full max-w-sm rounded-2xl border p-4 transition" :class="nodeClasses('IdP / PDP')">
                     <p class="text-sm uppercase tracking-wide">IdP / PDP</p>
                     <p class="mt-3 text-xs text-slate-300/90" x-text="activeNodes['IdP / PDP'].detail || 'Emissão e verificação de JWT'"></p>
                     <span class="mt-3 inline-flex rounded-full bg-slate-950/60 px-2 py-1 text-xs" x-text="statusBadge('IdP / PDP')"></span>
                   </div>
-                  <div class="rounded-2xl border p-4 transition" :class="nodeClasses('Policy Admin / PAP')">
+                  <div class="w-full max-w-sm rounded-2xl border p-4 transition" :class="nodeClasses('Policy Admin / PAP')">
                     <p class="text-sm uppercase tracking-wide">Policy Admin / PAP</p>
                     <p class="mt-3 text-xs text-slate-300/90" x-text="activeNodes['Policy Admin / PAP'].detail || 'Políticas centralizadas'"></p>
                     <span class="mt-3 inline-flex rounded-full bg-slate-950/60 px-2 py-1 text-xs" x-text="statusBadge('Policy Admin / PAP')"></span>
@@ -124,8 +125,8 @@
               <!-- Camada 3: Backend -->
               <div>
                 <p class="mb-2 text-xs font-semibold uppercase tracking-widest text-amber-300/80">● Backend</p>
-                <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                  <div class="rounded-2xl border p-4 transition" :class="nodeClasses('Backend API')">
+                <div class="flex flex-wrap justify-center gap-4">
+                  <div class="w-full max-w-sm rounded-2xl border p-4 transition" :class="nodeClasses('Backend API')">
                     <p class="text-sm uppercase tracking-wide">Backend API</p>
                     <p class="mt-3 text-xs text-slate-300/90" x-text="activeNodes['Backend API'].detail || 'Resource server com RBAC/ABAC'"></p>
                     <span class="mt-3 inline-flex rounded-full bg-slate-950/60 px-2 py-1 text-xs" x-text="statusBadge('Backend API')"></span>
@@ -136,34 +137,24 @@
               <!-- Camada 4: Dados -->
               <div>
                 <p class="mb-2 text-xs font-semibold uppercase tracking-widest text-emerald-300/80">● Dados</p>
-                <div class="grid gap-4 sm:grid-cols-3 lg:grid-cols-4">
-                  <div class="rounded-2xl border p-4 transition" :class="nodeClasses('Identity DB / PIP')">
+                <div class="flex flex-wrap justify-center gap-4">
+                  <div class="w-full max-w-sm rounded-2xl border p-4 transition" :class="nodeClasses('Identity DB / PIP')">
                     <p class="text-sm uppercase tracking-wide">Identity DB / PIP</p>
                     <p class="mt-3 text-xs text-slate-300/90" x-text="activeNodes['Identity DB / PIP'].detail || 'Atributos do sujeito'"></p>
                     <span class="mt-3 inline-flex rounded-full bg-slate-950/60 px-2 py-1 text-xs" x-text="statusBadge('Identity DB / PIP')"></span>
                   </div>
-                  <div class="rounded-2xl border p-4 transition" :class="nodeClasses('Business DB')">
+                  <div class="w-full max-w-sm rounded-2xl border p-4 transition" :class="nodeClasses('Business DB')">
                     <p class="text-sm uppercase tracking-wide">Business DB</p>
                     <p class="mt-3 text-xs text-slate-300/90" x-text="activeNodes['Business DB'].detail || 'Persistência simulada'"></p>
                     <span class="mt-3 inline-flex rounded-full bg-slate-950/60 px-2 py-1 text-xs" x-text="statusBadge('Business DB')"></span>
                   </div>
-                  <div class="rounded-2xl border p-4 transition" :class="nodeClasses('Object Storage')">
+                  <div class="w-full max-w-sm rounded-2xl border p-4 transition" :class="nodeClasses('Object Storage')">
                     <p class="text-sm uppercase tracking-wide">Object Storage</p>
                     <p class="mt-3 text-xs text-slate-300/90" x-text="activeNodes['Object Storage'].detail || 'S3 mock com pre-signed URL'"></p>
                     <span class="mt-3 inline-flex rounded-full bg-slate-950/60 px-2 py-1 text-xs" x-text="statusBadge('Object Storage')"></span>
                   </div>
                 </div>
               </div>
-            </div>
-          </div>
-
-          <div class="rounded-2xl border border-slate-800 bg-slate-900/80 p-4">
-            <h2 class="text-lg font-semibold">Última Resposta</h2>
-            <pre class="mt-4 overflow-x-auto rounded-2xl bg-slate-950/80 p-4 text-xs text-cyan-100" x-text="pretty(lastResponse)"></pre>
-            <div x-show="lastDownload" class="mt-4 rounded-2xl border border-slate-800 bg-slate-950/80 p-4 text-sm text-slate-200">
-              <p class="font-medium text-slate-100">Download do storage</p>
-              <p class="mt-2" x-text="lastDownload?.data?.file_name"></p>
-              <p class="mt-2 text-slate-400" x-text="lastDownload?.data?.content"></p>
             </div>
           </div>
 
@@ -217,6 +208,16 @@
           </section>
 
           <section class="rounded-2xl border border-slate-800 bg-slate-900/80 p-4">
+            <h2 class="text-lg font-semibold">Última Resposta</h2>
+            <pre class="mt-4 overflow-x-auto rounded-2xl bg-slate-950/80 p-4 text-xs text-cyan-100" x-text="pretty(lastResponse)"></pre>
+            <div x-show="lastDownload" class="mt-4 rounded-2xl border border-slate-800 bg-slate-950/80 p-4 text-sm text-slate-200">
+              <p class="font-medium text-slate-100">Download do storage</p>
+              <p class="mt-2" x-text="lastDownload?.data?.file_name"></p>
+              <p class="mt-2 text-slate-400" x-text="lastDownload?.data?.content"></p>
+            </div>
+          </section>
+
+          <section class="rounded-2xl border border-slate-800 bg-slate-900/80 p-4">
             <h2 class="text-lg font-semibold">Laboratório de Ataques</h2>
             <p class="mt-1 text-sm text-slate-400">Edite o payload para tentar elevar privilégios e use o token forjado nas chamadas.</p>
             <textarea
@@ -256,6 +257,72 @@
           </template>
         </div>
       </footer>
+    </div>
+
+    <!-- Modal de Login -->
+    <div
+      x-show="showLoginModal"
+      x-cloak
+      class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm"
+      @keydown.escape.window="closeLoginModal()"
+    >
+      <div
+        class="w-full max-w-md rounded-2xl border border-slate-700 bg-slate-900 p-6 shadow-2xl"
+        @click.outside="closeLoginModal()"
+      >
+        <div class="flex items-center justify-between">
+          <h2 class="text-xl font-semibold text-slate-100">Login OAuth2/OIDC</h2>
+          <button
+            class="rounded-lg border border-slate-700 px-2 py-1 text-sm text-slate-300 hover:border-slate-500"
+            @click="closeLoginModal()"
+          >
+            ✕
+          </button>
+        </div>
+        <p class="mt-1 text-sm text-slate-400">Escolha um usuário de demonstração e informe uma senha.</p>
+
+        <form class="mt-5 space-y-4" @submit.prevent="login()">
+          <div>
+            <label class="mb-1 block text-sm text-slate-300">Usuário</label>
+            <select
+              x-model="selectedUser"
+              class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100 outline-none ring-0"
+            >
+              <template x-for="user in users" :key="user.username">
+                <option :value="user.username" x-text="user.label"></option>
+              </template>
+            </select>
+          </div>
+
+          <div>
+            <label class="mb-1 block text-sm text-slate-300">Senha</label>
+            <input
+              type="password"
+              x-model="loginPassword"
+              placeholder="Qualquer valor (demo)"
+              class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100 outline-none ring-0"
+            />
+            <p class="mt-1 text-xs text-slate-500">Senha é aceita sem validação para fins didáticos.</p>
+          </div>
+
+          <div class="flex items-center justify-end gap-2 pt-1">
+            <button
+              type="button"
+              class="rounded-xl border border-slate-700 px-4 py-2 text-sm text-slate-300 hover:border-slate-500"
+              @click="closeLoginModal()"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              class="rounded-xl bg-cyan-500 px-4 py-2 text-sm font-medium text-slate-950 hover:bg-cyan-400 disabled:opacity-50"
+              :disabled="pending"
+            >
+              Entrar
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
 
     <!-- Painel de Administração -->

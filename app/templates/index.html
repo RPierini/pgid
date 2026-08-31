@@ -10,10 +10,10 @@
         darkMode: "class",
       };
     </script>
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <script defer src="/static/app.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
   </head>
-  <body class="min-h-screen bg-slate-950 text-slate-100" x-data="gidDemo()" x-init="init()">
+  <body class="min-h-screen bg-slate-950 text-slate-100" x-data="gidDemo" x-init="init()">
     <div class="mx-auto flex min-h-screen max-w-7xl flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8">
       <header class="rounded-2xl border border-slate-800 bg-slate-900/80 p-4 shadow-xl shadow-slate-950/40">
         <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
@@ -203,7 +203,7 @@
     </div>
 
     <!-- Painel de Administração -->
-    <div class="mx-auto max-w-7xl px-4 pb-10 sm:px-6 lg:px-8" x-data="adminPanel()" x-init="init()">
+    <div class="mx-auto max-w-7xl px-4 pb-10 sm:px-6 lg:px-8" x-data="adminPanel" x-init="init()">
       <div class="mt-8 rounded-2xl border border-slate-700 bg-slate-900/80 p-6">
         <h2 class="text-xl font-semibold text-slate-100">Painel de Administração</h2>
         <p class="mt-1 text-sm text-slate-400">Gerencie identidades (SQLite) e dados da aplicação (PostgreSQL).</p>

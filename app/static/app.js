@@ -44,6 +44,8 @@ document.addEventListener("alpine:init", () => {
     lastResponse: null,
     lastDownload: null,
     activeNodes: {},
+    flowSteps: [],
+    flowStepIndex: -1,
     pending: false,
 
     init() {
@@ -55,6 +57,8 @@ document.addEventListener("alpine:init", () => {
         acc[node] = { active: false, status: null, detail: "" };
         return acc;
       }, {});
+      this.flowSteps = [];
+      this.flowStepIndex = -1;
     },
 
     nodeClasses(node) {
@@ -234,7 +238,14 @@ document.addEventListener("alpine:init", () => {
 
     async animateFlow(flow) {
       this.resetTopology();
-      for (const step of flow) {
+      this.flowSteps = (flow || []).map((step) => ({
+        node: step.node,
+        status: step.status,
+        detail: step.detail,
+      }));
+      for (let i = 0; i < this.flowSteps.length; i++) {
+        const step = this.flowSteps[i];
+        this.flowStepIndex = i;
         if (this.activeNodes[step.node]) {
           this.activeNodes[step.node] = {
             active: true,
@@ -242,8 +253,29 @@ document.addEventListener("alpine:init", () => {
             detail: step.detail,
           };
         }
-        await new Promise((resolve) => setTimeout(resolve, 180));
+        // Pausa maior a cada passo para o aluno acompanhar o roteiro
+        await new Promise((resolve) => setTimeout(resolve, 420));
       }
+    },
+
+    flowStepClass(index) {
+      if (index > this.flowStepIndex) return "border-slate-800 bg-slate-950/40 opacity-50";
+      const step = this.flowSteps[index];
+      const ok = step && step.status >= 400 ? false : true;
+      if (index === this.flowStepIndex) {
+        return ok
+          ? "border-cyan-400 bg-cyan-500/15 shadow-lg shadow-cyan-500/10"
+          : "border-rose-400 bg-rose-500/15 shadow-lg shadow-rose-500/10";
+      }
+      return ok
+        ? "border-emerald-400/50 bg-emerald-500/5"
+        : "border-rose-400/50 bg-rose-500/5";
+    },
+
+    statusColorClass(status) {
+      if (status >= 400) return "bg-rose-500/20 text-rose-100";
+      if (status >= 200 && status < 300) return "bg-emerald-500/20 text-emerald-100";
+      return "bg-slate-800 text-slate-300";
     },
 
     addLog(method, endpoint, status, duration, message) {

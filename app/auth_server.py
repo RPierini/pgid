@@ -102,7 +102,8 @@ async def login(payload: LoginRequest) -> TokenResponse:
 
     token = issue_access_token(user)
     flow = [
-        FlowStep(node="Cliente / App", status=200, detail="Login OAuth2/OIDC iniciado."),
+        FlowStep(node="Cliente / App", status=200, detail="Login OAuth2/OIDC iniciado na SPA."),
+        FlowStep(node="API Gateway (PEP)", status=200, detail="Requisição de login passou pelo gateway (pass-through, sem token ainda)."),
         FlowStep(node="IdP / PDP", status=200, detail="Usuário autenticado e token emitido."),
         FlowStep(node="Identity DB / PIP", status=200, detail="Identidade demonstrativa consultada."),
         FlowStep(node="Cliente / App", status=200, detail="JWT entregue ao frontend."),

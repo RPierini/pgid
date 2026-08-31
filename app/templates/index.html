@@ -86,46 +86,73 @@
               </div>
             </div>
 
-            <div class="mt-6 grid gap-4 lg:grid-cols-3">
-              <div class="rounded-2xl border p-4 transition" :class="nodeClasses('Cliente / App')">
-                <p class="text-sm uppercase tracking-wide">Cliente / App</p>
-                <p class="mt-3 text-xs text-slate-300/90" x-text="activeNodes['Cliente / App'].detail || 'SPA em Alpine.js'"></p>
-                <span class="mt-3 inline-flex rounded-full bg-slate-950/60 px-2 py-1 text-xs" x-text="statusBadge('Cliente / App')"></span>
+            <div class="mt-6 space-y-5">
+              <!-- Camada 1: Frontend -->
+              <div>
+                <p class="mb-2 text-xs font-semibold uppercase tracking-widest text-cyan-300/80">● Frontend</p>
+                <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                  <div class="rounded-2xl border p-4 transition" :class="nodeClasses('Cliente / App')">
+                    <p class="text-sm uppercase tracking-wide">Cliente / App</p>
+                    <p class="mt-3 text-xs text-slate-300/90" x-text="activeNodes['Cliente / App'].detail || 'SPA em Alpine.js'"></p>
+                    <span class="mt-3 inline-flex rounded-full bg-slate-950/60 px-2 py-1 text-xs" x-text="statusBadge('Cliente / App')"></span>
+                  </div>
+                </div>
               </div>
-              <div class="rounded-2xl border p-4 transition" :class="nodeClasses('API Gateway (PEP)')">
-                <p class="text-sm uppercase tracking-wide">API Gateway (PEP)</p>
-                <p class="mt-3 text-xs text-slate-300/90" x-text="activeNodes['API Gateway (PEP)'].detail || 'Validação e enforcement'"></p>
-                <span class="mt-3 inline-flex rounded-full bg-slate-950/60 px-2 py-1 text-xs" x-text="statusBadge('API Gateway (PEP)')"></span>
+
+              <!-- Camada 2: Infraestrutura -->
+              <div>
+                <p class="mb-2 text-xs font-semibold uppercase tracking-widest text-indigo-300/80">● Infraestrutura</p>
+                <div class="grid gap-4 sm:grid-cols-3 lg:grid-cols-4">
+                  <div class="rounded-2xl border p-4 transition" :class="nodeClasses('API Gateway (PEP)')">
+                    <p class="text-sm uppercase tracking-wide">API Gateway (PEP)</p>
+                    <p class="mt-3 text-xs text-slate-300/90" x-text="activeNodes['API Gateway (PEP)'].detail || 'Validação e enforcement'"></p>
+                    <span class="mt-3 inline-flex rounded-full bg-slate-950/60 px-2 py-1 text-xs" x-text="statusBadge('API Gateway (PEP)')"></span>
+                  </div>
+                  <div class="rounded-2xl border p-4 transition" :class="nodeClasses('IdP / PDP')">
+                    <p class="text-sm uppercase tracking-wide">IdP / PDP</p>
+                    <p class="mt-3 text-xs text-slate-300/90" x-text="activeNodes['IdP / PDP'].detail || 'Emissão e verificação de JWT'"></p>
+                    <span class="mt-3 inline-flex rounded-full bg-slate-950/60 px-2 py-1 text-xs" x-text="statusBadge('IdP / PDP')"></span>
+                  </div>
+                  <div class="rounded-2xl border p-4 transition" :class="nodeClasses('Policy Admin / PAP')">
+                    <p class="text-sm uppercase tracking-wide">Policy Admin / PAP</p>
+                    <p class="mt-3 text-xs text-slate-300/90" x-text="activeNodes['Policy Admin / PAP'].detail || 'Políticas centralizadas'"></p>
+                    <span class="mt-3 inline-flex rounded-full bg-slate-950/60 px-2 py-1 text-xs" x-text="statusBadge('Policy Admin / PAP')"></span>
+                  </div>
+                </div>
               </div>
-              <div class="rounded-2xl border p-4 transition" :class="nodeClasses('Backend API')">
-                <p class="text-sm uppercase tracking-wide">Backend API</p>
-                <p class="mt-3 text-xs text-slate-300/90" x-text="activeNodes['Backend API'].detail || 'Resource server com RBAC/ABAC'"></p>
-                <span class="mt-3 inline-flex rounded-full bg-slate-950/60 px-2 py-1 text-xs" x-text="statusBadge('Backend API')"></span>
+
+              <!-- Camada 3: Backend -->
+              <div>
+                <p class="mb-2 text-xs font-semibold uppercase tracking-widest text-amber-300/80">● Backend</p>
+                <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                  <div class="rounded-2xl border p-4 transition" :class="nodeClasses('Backend API')">
+                    <p class="text-sm uppercase tracking-wide">Backend API</p>
+                    <p class="mt-3 text-xs text-slate-300/90" x-text="activeNodes['Backend API'].detail || 'Resource server com RBAC/ABAC'"></p>
+                    <span class="mt-3 inline-flex rounded-full bg-slate-950/60 px-2 py-1 text-xs" x-text="statusBadge('Backend API')"></span>
+                  </div>
+                </div>
               </div>
-              <div class="rounded-2xl border p-4 transition" :class="nodeClasses('IdP / PDP')">
-                <p class="text-sm uppercase tracking-wide">IdP / PDP</p>
-                <p class="mt-3 text-xs text-slate-300/90" x-text="activeNodes['IdP / PDP'].detail || 'Emissão e verificação de JWT'"></p>
-                <span class="mt-3 inline-flex rounded-full bg-slate-950/60 px-2 py-1 text-xs" x-text="statusBadge('IdP / PDP')"></span>
-              </div>
-              <div class="rounded-2xl border p-4 transition" :class="nodeClasses('Policy Admin / PAP')">
-                <p class="text-sm uppercase tracking-wide">Policy Admin / PAP</p>
-                <p class="mt-3 text-xs text-slate-300/90" x-text="activeNodes['Policy Admin / PAP'].detail || 'Políticas centralizadas'"></p>
-                <span class="mt-3 inline-flex rounded-full bg-slate-950/60 px-2 py-1 text-xs" x-text="statusBadge('Policy Admin / PAP')"></span>
-              </div>
-              <div class="rounded-2xl border p-4 transition" :class="nodeClasses('Identity DB / PIP')">
-                <p class="text-sm uppercase tracking-wide">Identity DB / PIP</p>
-                <p class="mt-3 text-xs text-slate-300/90" x-text="activeNodes['Identity DB / PIP'].detail || 'Atributos do sujeito'"></p>
-                <span class="mt-3 inline-flex rounded-full bg-slate-950/60 px-2 py-1 text-xs" x-text="statusBadge('Identity DB / PIP')"></span>
-              </div>
-              <div class="rounded-2xl border p-4 transition" :class="nodeClasses('Business DB')">
-                <p class="text-sm uppercase tracking-wide">Business DB</p>
-                <p class="mt-3 text-xs text-slate-300/90" x-text="activeNodes['Business DB'].detail || 'Persistência simulada'"></p>
-                <span class="mt-3 inline-flex rounded-full bg-slate-950/60 px-2 py-1 text-xs" x-text="statusBadge('Business DB')"></span>
-              </div>
-              <div class="rounded-2xl border p-4 transition" :class="nodeClasses('Object Storage')">
-                <p class="text-sm uppercase tracking-wide">Object Storage</p>
-                <p class="mt-3 text-xs text-slate-300/90" x-text="activeNodes['Object Storage'].detail || 'S3 mock com pre-signed URL'"></p>
-                <span class="mt-3 inline-flex rounded-full bg-slate-950/60 px-2 py-1 text-xs" x-text="statusBadge('Object Storage')"></span>
+
+              <!-- Camada 4: Dados -->
+              <div>
+                <p class="mb-2 text-xs font-semibold uppercase tracking-widest text-emerald-300/80">● Dados</p>
+                <div class="grid gap-4 sm:grid-cols-3 lg:grid-cols-4">
+                  <div class="rounded-2xl border p-4 transition" :class="nodeClasses('Identity DB / PIP')">
+                    <p class="text-sm uppercase tracking-wide">Identity DB / PIP</p>
+                    <p class="mt-3 text-xs text-slate-300/90" x-text="activeNodes['Identity DB / PIP'].detail || 'Atributos do sujeito'"></p>
+                    <span class="mt-3 inline-flex rounded-full bg-slate-950/60 px-2 py-1 text-xs" x-text="statusBadge('Identity DB / PIP')"></span>
+                  </div>
+                  <div class="rounded-2xl border p-4 transition" :class="nodeClasses('Business DB')">
+                    <p class="text-sm uppercase tracking-wide">Business DB</p>
+                    <p class="mt-3 text-xs text-slate-300/90" x-text="activeNodes['Business DB'].detail || 'Persistência simulada'"></p>
+                    <span class="mt-3 inline-flex rounded-full bg-slate-950/60 px-2 py-1 text-xs" x-text="statusBadge('Business DB')"></span>
+                  </div>
+                  <div class="rounded-2xl border p-4 transition" :class="nodeClasses('Object Storage')">
+                    <p class="text-sm uppercase tracking-wide">Object Storage</p>
+                    <p class="mt-3 text-xs text-slate-300/90" x-text="activeNodes['Object Storage'].detail || 'S3 mock com pre-signed URL'"></p>
+                    <span class="mt-3 inline-flex rounded-full bg-slate-950/60 px-2 py-1 text-xs" x-text="statusBadge('Object Storage')"></span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -138,6 +165,35 @@
               <p class="mt-2" x-text="lastDownload?.data?.file_name"></p>
               <p class="mt-2 text-slate-400" x-text="lastDownload?.data?.content"></p>
             </div>
+          </div>
+
+          <!-- Roteiro do Fluxo -->
+          <div class="rounded-2xl border border-slate-800 bg-slate-900/80 p-4">
+            <div class="flex items-center justify-between">
+              <h2 class="text-lg font-semibold">Roteiro do Fluxo</h2>
+              <span class="text-sm text-slate-400" x-text="flowSteps.length ? `${flowStepIndex + 1}/${flowSteps.length} etapas` : 'aguardando requisição'"></span>
+            </div>
+            <p class="mt-1 text-sm text-slate-400">Passo a passo de cada etapa percorrida na topologia durante a requisição.</p>
+            <div class="mt-4 space-y-2" x-show="flowSteps.length">
+              <template x-for="(step, index) in flowSteps" :key="index">
+                <div class="flex items-start gap-3 rounded-xl border p-3 text-sm transition" :class="flowStepClass(index)">
+                  <span class="mt-0.5 inline-flex h-6 w-6 flex-none items-center justify-center rounded-full bg-slate-800 text-xs text-slate-200" x-text="index + 1"></span>
+                  <div class="min-w-0 flex-1">
+                    <div class="flex flex-wrap items-center gap-2">
+                      <span class="font-medium text-slate-100" x-text="step.node"></span>
+                      <span class="rounded-full px-2 py-0.5 text-xs" :class="statusColorClass(step.status)" x-text="`HTTP ${step.status}`"></span>
+                      <span class="inline-flex items-center gap-1 text-[10px] uppercase tracking-wide text-slate-400" x-show="index === flowStepIndex">
+                        <span class="h-1.5 w-1.5 animate-pulse rounded-full bg-cyan-400"></span> executando
+                      </span>
+                    </div>
+                    <p class="mt-1 text-slate-300" x-text="step.detail"></p>
+                  </div>
+                </div>
+              </template>
+            </div>
+            <p class="mt-4 text-sm text-slate-500" x-show="!flowSteps.length">
+              Execute um login ou uma requisição (ex.: "Ver Notas") para visualizar o roteiro.
+            </p>
           </div>
         </section>
 

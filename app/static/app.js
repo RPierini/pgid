@@ -274,7 +274,12 @@ document.addEventListener("alpine:init", () => {
 
     async downloadFromStorage(url) {
       const startedAt = performance.now();
-      const response = await fetch(url);
+      // Se a URL for relativa, resolve contra o host atual da página para
+      // funcionar independentemente do host/scheme usado no proxy/NPM.
+      const resolvedUrl = /^https?:\/\//i.test(url)
+        ? url
+        : (window.location.origin || "") + url;
+      const response = await fetch(resolvedUrl);
       const result = await response.json();
       const duration = Math.round(performance.now() - startedAt);
       await this.animateFlow(result.flow || []);

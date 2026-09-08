@@ -38,10 +38,11 @@ def build_presigned_download_url(request: Request, user: DemoUser, object_key: s
         STORAGE_SECRET,
         algorithm=STORAGE_ALGORITHM,
     )
-    base_url = str(request.base_url).rstrip("/")
     query = urlencode({"token": token})
+    # URL relativa: o frontend resolve contra o host da página (window.location.origin),
+    # evitando problemas com base_url/host interno quando a API passa por proxy/NPM.
     return {
-        "download_url": f"{base_url}/storage/download?{query}",
+        "download_url": f"/storage/download?{query}",
         "object_key": object_key,
         "expires_at": expires_at.isoformat(),
         "scope": "storage:download",

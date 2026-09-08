@@ -1,14 +1,15 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Optional
 
 import jwt
-from fastapi import APIRouter, Header, Request, status
+from fastapi import APIRouter, Depends, Request, status
 from fastapi.responses import JSONResponse
 
 from app import backend_api, storage_mock
 from app.auth_server import get_demo_user_by_subject, verify_access_token
 from app.models import ApiEnvelope, CourseLockRequest, DemoUser, FlowStep, GradeSubmission
+from app.security import optional_token
 
 router = APIRouter(prefix="/api", tags=["gateway"])
 
@@ -131,6 +132,14 @@ async def _authorize(
     flow[3].detail = "Atributos do sujeito carregados do Identity DB (SQLite)."
 
     token_roles = set(claims.get("roles", []))
+
+    # Administrador é onipresente: a role "admin" autoriza qualquer política
+    # sem depender de RBAC/ABAC específicos da operação.
+    if "admin" in token_roles:
+        flow[4].status = 200
+        flow[4].detail = "Role admin autorizou a operação (privilégio global)."
+        return user, claims, policy, flow
+
     required_roles = set(policy["required_roles"])
     if not token_roles.intersection(required_roles):
         return _deny("RBAC negou acesso para as roles apresentadas no JWT.", flow, status.HTTP_403_FORBIDDEN, policy)
@@ -184,7 +193,8 @@ def _success(
 
 
 @router.get("/aluno/notas", response_model=ApiEnvelope)
-async def aluno_notas(authorization: str | None = Header(default=None)) -> ApiEnvelope | JSONResponse:
+async def aluno_notas(token: Optional[str] = Depends(optional_token)) -> ApiEnvelope | JSONResponse:
+    authorization = f"Bearer {token}" if token else None
     decision = await _authorize(authorization, "view_grades")
     if isinstance(decision, JSONResponse):
         return decision
@@ -203,8 +213,9 @@ async def aluno_notas(authorization: str | None = Header(default=None)) -> ApiEn
 @router.post("/professor/lancar-notas", response_model=ApiEnvelope)
 async def lancar_notas(
     payload: GradeSubmission,
-    authorization: str | None = Header(default=None),
+    token: Optional[str] = Depends(optional_token),
 ) -> ApiEnvelope | JSONResponse:
+    authorization = f"Bearer {token}" if token else None
     decision = await _authorize(authorization, "submit_grades")
     if isinstance(decision, JSONResponse):
         return decision
@@ -223,8 +234,9 @@ async def lancar_notas(
 @router.delete("/coordenador/trancar-curso", response_model=ApiEnvelope)
 async def trancar_curso(
     payload: CourseLockRequest,
-    authorization: str | None = Header(default=None),
+    token: Optional[str] = Depends(optional_token),
 ) -> ApiEnvelope | JSONResponse:
+    authorization = f"Bearer {token}" if token else None
     decision = await _authorize(authorization, "freeze_course")
     if isinstance(decision, JSONResponse):
         return decision
@@ -243,8 +255,9 @@ async def trancar_curso(
 @router.get("/storage/presigned-url", response_model=ApiEnvelope)
 async def presigned_url(
     request: Request,
-    authorization: str | None = Header(default=None),
+    token: Optional[str] = Depends(optional_token),
 ) -> ApiEnvelope | JSONResponse:
+    authorization = f"Bearer {token}" if token else None
     decision = await _authorize(authorization, "presigned_url")
     if isinstance(decision, JSONResponse):
         return decision

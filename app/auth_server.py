@@ -17,6 +17,11 @@ ACCESS_TOKEN_LIFETIME_SECONDS = 3600
 JWT_ALGORITHM = "RS256"
 JWT_KEY_ID = "pgid-demo-rsa-1"
 
+# Conta de administração didática. A senha é validada apenas quando o
+# username é "admin"; os demais usuários demo mantêm o login sem validação.
+ADMIN_USERNAME = "admin"
+ADMIN_PASSWORD = "Admin123"
+
 router = APIRouter(tags=["auth"])
 
 _private_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
@@ -98,6 +103,14 @@ async def login(payload: LoginRequest) -> TokenResponse:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Usuário de demonstração inválido.",
+        )
+
+    # A conta administradora exige a senha correta; os demais usuários demo
+    # mantêm o login didático (senha aceita sem validação).
+    if user.username == ADMIN_USERNAME and payload.password != ADMIN_PASSWORD:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Senha incorreta para a conta de administração.",
         )
 
     token = issue_access_token(user)

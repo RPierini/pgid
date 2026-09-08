@@ -11,6 +11,20 @@ from app.db.models import CourseLockRecord, GradeRecord, UserModel
 
 _SEED_USERS = [
     {
+        "username": "admin",
+        "subject": "administrador-geral",
+        "name": "Administrador",
+        "label": "Admin - Administrador",
+        "roles": ["admin"],
+        "scopes": ["notas:read", "notas:write", "matriculas:manage", "storage:download", "admin:manage"],
+        "department": "gestao",
+        "academic_unit": "sistemas",
+        "clearance": 9,
+        "can_grade": True,
+        "storage_tier": "admin",
+        "active": True,
+    },
+    {
         "username": "alice",
         "subject": "aluna-alice",
         "name": "Alice",

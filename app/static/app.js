@@ -1,4 +1,5 @@
 const demoUsers = [
+  { username: "admin", label: "Admin - Administrador" },
   { username: "alice", label: "Alice - Aluna" },
   { username: "bob", label: "Bob - Professor" },
   { username: "carlos", label: "Carlos - Coordenador" },
@@ -30,6 +31,25 @@ function encodeBase64Url(value) {
 }
 
 document.addEventListener("alpine:init", () => {
+  // Store global de autenticação compartilhado entre o laboratório (gidDemo)
+  // e o painel de administração (adminPanel). O painel admin só é exibido e
+  // só envia o token quando o usuário logado possui a role "admin".
+  Alpine.store("auth", {
+    token: "",
+    roles: [],
+    set(token, roles) {
+      this.token = token;
+      this.roles = roles || [];
+    },
+    clear() {
+      this.token = "";
+      this.roles = [];
+    },
+    isAdmin() {
+      return this.roles.includes("admin");
+    },
+  });
+
   Alpine.data("gidDemo", () => ({
     users: demoUsers,
     selectedUser: "alice",
@@ -139,6 +159,7 @@ document.addEventListener("alpine:init", () => {
       this.lastDownload = null;
       this.syncInspector("");
       this.resetTopology();
+      Alpine.store("auth").clear();
       this.addLog("POST", "/logout", 200, 0, "Sessão local encerrada.");
     },
 
@@ -162,11 +183,12 @@ document.addEventListener("alpine:init", () => {
     },
 
     async login() {
+      const password = this.loginPassword;
       this.closeLoginModal();
       await this.runRequest({
         method: "POST",
         endpoint: "/auth/login",
-        body: { username: this.selectedUser },
+        body: { username: this.selectedUser, password },
         includeAuth: false,
         onSuccess: (result) => {
           this.token = result.access_token;
@@ -174,6 +196,7 @@ document.addEventListener("alpine:init", () => {
           this.useForgedToken = false;
           this.syncInspector(result.access_token);
           this.lastResponse = result;
+          Alpine.store("auth").set(result.access_token, result.user?.roles);
           this.addLog("AUTH", "/auth/login", 200, result?.flow?.length || 0, `Login de ${result.user?.label ?? this.selectedUser} (senha aceita para demonstração).`);
         },
       });
@@ -350,9 +373,20 @@ document.addEventListener("alpine:init", () => {
       await Promise.all([this.loadUsers(), this.loadGrades(), this.loadCourseLocks()]);
     },
 
+    authHeaders(extra = {}) {
+      // Só envia o token real (nunca o forjado do laboratório). Se não houver
+      // token admin, o backend responde 401/403 e o painel não carrega nada.
+      const headers = { ...extra };
+      const token = Alpine.store("auth").token;
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
+      return headers;
+    },
+
     async loadUsers() {
       try {
-        const r = await fetch("/admin/users");
+        const r = await fetch("/admin/users", { headers: this.authHeaders() });
         this.users = await r.json();
       } catch (e) {
         this.error = e.message;
@@ -361,7 +395,7 @@ document.addEventListener("alpine:init", () => {
 
     async loadGrades() {
       try {
-        const r = await fetch("/admin/grades");
+        const r = await fetch("/admin/grades", { headers: this.authHeaders() });
         this.grades = await r.json();
       } catch (e) {
         this.error = e.message;
@@ -370,7 +404,7 @@ document.addEventListener("alpine:init", () => {
 
     async loadCourseLocks() {
       try {
-        const r = await fetch("/admin/course-locks");
+        const r = await fetch("/admin/course-locks", { headers: this.authHeaders() });
         this.courseLocks = await r.json();
       } catch (e) {
         this.error = e.message;
@@ -388,7 +422,7 @@ document.addEventListener("alpine:init", () => {
       if (!body.label) body.label = body.name;
       const r = await fetch("/admin/users", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: this.authHeaders({ "Content-Type": "application/json" }),
         body: JSON.stringify(body),
       });
       if (r.ok) {
@@ -404,7 +438,7 @@ document.addEventListener("alpine:init", () => {
     async toggleActive(user) {
       const r = await fetch(`/admin/users/${user.username}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: this.authHeaders({ "Content-Type": "application/json" }),
         body: JSON.stringify({ active: !user.active }),
       });
       if (r.ok) {
@@ -416,7 +450,7 @@ document.addEventListener("alpine:init", () => {
 
     async deleteUser(username) {
       if (!confirm(`Remover usuário "${username}"?`)) return;
-      const r = await fetch(`/admin/users/${username}`, { method: "DELETE" });
+      const r = await fetch(`/admin/users/${username}`, { method: "DELETE", headers: this.authHeaders() });
       if (r.ok || r.status === 204) {
         await this.loadUsers();
       } else {
@@ -426,7 +460,7 @@ document.addEventListener("alpine:init", () => {
 
     async deleteGrade(id) {
       if (!confirm(`Remover nota #${id}?`)) return;
-      const r = await fetch(`/admin/grades/${id}`, { method: "DELETE" });
+      const r = await fetch(`/admin/grades/${id}`, { method: "DELETE", headers: this.authHeaders() });
       if (r.ok || r.status === 204) {
         await this.loadGrades();
       } else {
@@ -436,7 +470,7 @@ document.addEventListener("alpine:init", () => {
 
     async deleteCourseLock(id) {
       if (!confirm(`Remover trancamento #${id}?`)) return;
-      const r = await fetch(`/admin/course-locks/${id}`, { method: "DELETE" });
+      const r = await fetch(`/admin/course-locks/${id}`, { method: "DELETE", headers: this.authHeaders() });
       if (r.ok || r.status === 204) {
         await this.loadCourseLocks();
       } else {

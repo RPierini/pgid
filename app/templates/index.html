@@ -326,6 +326,9 @@
     </div>
 
     <!-- Painel de Administração -->
+    <!-- Só é montado (x-if) quando o usuário logado tem a role "admin". Para
+         os demais perfis o componente nem existe no DOM e nada é carregado. -->
+    <template x-if="Alpine.store('auth').isAdmin()">
     <div class="mx-auto max-w-7xl px-4 pb-10 sm:px-6 lg:px-8" x-data="adminPanel" x-init="init()">
       <div class="mt-8 rounded-2xl border border-slate-700 bg-slate-900/80 p-6">
         <h2 class="text-xl font-semibold text-slate-100">Painel de Administração</h2>
@@ -469,5 +472,6 @@
         </div>
       </div>
     </div>
+    </template>
   </body>
 </html>

@@ -22,6 +22,7 @@ class DemoUser(BaseModel):
 
 class LoginRequest(BaseModel):
     username: str = Field(..., description="Usuário demonstrativo selecionado na UI")
+    password: str = Field(default="", description="Senha (validada apenas para conta administradora)")
 
 
 class GradeSubmission(BaseModel):
